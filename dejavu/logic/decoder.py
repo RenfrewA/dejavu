@@ -1,7 +1,7 @@
 import fnmatch
 import os
 from hashlib import sha1
-from typing import List, Tuple
+from typing import Generator, List, Tuple
 
 import numpy as np
 from pydub import AudioSegment
@@ -23,7 +23,7 @@ def unique_hash(file_path: str, block_size: int = 2**20) -> str:
     """
     s = sha1()
     with open(file_path, "rb") as f:
-        while buf := f.read(block_size)
+        while buf := f.read(block_size):
             s.update(buf)
     return s.hexdigest().upper()
 
@@ -46,6 +46,30 @@ def find_files(path: str, extensions: List[str]) -> List[Tuple[str, str]]:
                 p = os.path.join(dirpath, f)
                 results.append((p, extension))
     return results
+
+
+def find_files_g(path: str, extensions: List[str]) -> Generator[Tuple[str, str]]:
+    """
+    Get all files that meet the specified extensions.
+
+    :param path: path to a directory with audio files.
+    :param extensions: file extensions to look for.
+    :yields: a tuple with file name and its extension.
+    """
+    # Allow both with ".mp3" and without "mp3" to be used for extensions
+    norm_extensions = set()
+    for extension in extensions:
+        extension = extension.lower()
+        norm_extensions.add(extension)
+        if extension.startswith('.'):
+            norm_extensions.add(extension.lstrip('.'))
+        else:
+            norm_extensions.add(f'.{extension}')
+    for root, dirs, files in os.walk(path):
+        for f in files:
+            ext = os.path.splitext(f)[1].lower()
+            if ext in norm_extensions:
+                yield os.path.join(root, f), ext
 
 
 def read(file_name: str, limit: int = None) -> Tuple[List[List[int]], int, str]:
