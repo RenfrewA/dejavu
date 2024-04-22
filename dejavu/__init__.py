@@ -173,9 +173,9 @@ class Dejavu:
         """
         # count offset occurrences per song and keep only the maximum ones.
         sorted_matches = sorted(matches, key=lambda m: (m[0], m[1]))
-        counts = [(*key, len(list(group))) for key, group in groupby(sorted_matches, key=lambda m: (m[0], m[1]))]
+        counts = ((*key, len(list(group))) for key, group in groupby(sorted_matches, key=lambda m: (m[0], m[1])))
         songs_matches = sorted(
-            [max(list(group), key=lambda g: g[2]) for key, group in groupby(counts, key=lambda count: count[0])],
+            (max(group, key=lambda g: g[2]) for key, group in groupby(counts, key=lambda count: count[0])),
             key=lambda count: count[2], reverse=True
         )
 
