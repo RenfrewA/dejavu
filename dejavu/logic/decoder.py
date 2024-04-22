@@ -23,10 +23,7 @@ def unique_hash(file_path: str, block_size: int = 2**20) -> str:
     """
     s = sha1()
     with open(file_path, "rb") as f:
-        while True:
-            buf = f.read(block_size)
-            if not buf:
-                break
+        while buf := f.read(block_size)
             s.update(buf)
     return s.hexdigest().upper()
 
