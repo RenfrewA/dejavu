@@ -95,9 +95,9 @@ def read(file_name: str, limit: int = None) -> Tuple[List[List[int]], int, str]:
 
         data = np.fromstring(audiofile.raw_data, np.int16)
 
-        channels = []
-        for chn in range(audiofile.channels):
-            channels.append(data[chn::audiofile.channels])
+        channels = [
+            data[chn::audiofile.channels] for chn in range(audiofile.channels)
+        ]
 
         audiofile.frame_rate
     except audioop.error:
@@ -109,9 +109,7 @@ def read(file_name: str, limit: int = None) -> Tuple[List[List[int]], int, str]:
         audiofile = audiofile.T
         audiofile = audiofile.astype(np.int16)
 
-        channels = []
-        for chn in audiofile:
-            channels.append(chn)
+        channels = [chn for chn in audiofile]
 
     return channels, audiofile.frame_rate, unique_hash(file_name)
 
