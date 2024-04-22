@@ -48,7 +48,7 @@ def find_files(path: str, extensions: List[str]) -> List[Tuple[str, str]]:
     return results
 
 
-def find_files_g(path: str, extensions: List[str]) -> Generator[Tuple[str, str]]:
+def find_files_g(path: str, extensions: List[str]) -> Generator[Tuple[str, str], None, None]:
     """
     Get all files that meet the specified extensions.
 
