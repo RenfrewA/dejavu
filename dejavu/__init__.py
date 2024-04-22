@@ -33,6 +33,8 @@ class Dejavu:
         self.limit = self.config.get("fingerprint_limit", None)
         if self.limit == -1:  # for JSON compatibility
             self.limit = None
+        self.songs = None
+        self.songhashes_set = set()  # to know which ones we've computed before
         self.__load_fingerprinted_audio_hashes()
 
     def __load_fingerprinted_audio_hashes(self) -> None:
