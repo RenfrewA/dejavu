@@ -3,6 +3,7 @@
 # DEJAVU JSON RESPONSE
 SONG_ID = "song_id"
 SONG_NAME = 'song_name'
+ANIME_NAME = 'anime_name'
 RESULTS = 'results'
 
 HASHES_MATCHED = 'hashes_matched_in_input'
@@ -36,6 +37,7 @@ SONGS_TABLENAME = "songs"
 # SONGS FIELDS
 FIELD_SONG_ID = 'song_id'
 FIELD_SONGNAME = 'song_name'
+FIELD_ANIMENAME = 'anime_name'
 FIELD_FINGERPRINTED = "fingerprinted"
 FIELD_FILE_SHA1 = 'file_sha1'
 FIELD_TOTAL_HASHES = 'total_hashes'

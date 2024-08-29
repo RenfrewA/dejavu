@@ -14,7 +14,7 @@ from dejavu.config.settings import (DEFAULT_FS, DEFAULT_OVERLAP_RATIO,
                                     FINGERPRINTED_CONFIDENCE,
                                     FINGERPRINTED_HASHES, HASHES_MATCHED,
                                     INPUT_CONFIDENCE, INPUT_HASHES, OFFSET,
-                                    OFFSET_SECS, SONG_ID, SONG_NAME, TOPN)
+                                    OFFSET_SECS, SONG_ID, SONG_NAME, ANIME_NAME, TOPN)
 from dejavu.logic.fingerprint import fingerprint
 
 
@@ -64,7 +64,7 @@ class Dejavu:
         """
         self.db.delete_songs_by_id(song_ids)
 
-    def fingerprint_directory(self, path: str, extensions: str, nprocesses: int = None) -> None:
+    def fingerprint_directory(self, path: str, anime_names: dict, extensions: str, nprocesses: int = None) -> None:
         """
         Given a directory and a set of extensions it fingerprints all files that match each extension specified.
 
@@ -81,16 +81,19 @@ class Dejavu:
                 if decoder.unique_hash(filename) in self.songhashes_set:
                     print(f"{filename} already fingerprinted, continuing...")
                 else:
+                    remove_path = os.path.basename(filename)
+                    remove_ext = os.path.splitext(remove_path)[0]
                     futures.append(
                         executor.submit(
                             self._fingerprint_worker,
                             filename,
                             self.limit,
+                            anime_name=anime_names[remove_ext]
                         )
                     )
             for future in as_completed(futures):
                 try:
-                    song_name, hashes, file_hash = future.result()
+                    song_name, anime_name, hashes, file_hash = future.result()
                 except StopIteration:
                     break
                 except Exception:
@@ -98,13 +101,13 @@ class Dejavu:
                     # Print traceback because we can't reraise it here
                     traceback.print_exc(file=sys.stdout)
                 else:
-                    sid = self.db.insert_song(song_name, file_hash, len(hashes))
+                    sid = self.db.insert_song(song_name, anime_name, file_hash, len(hashes))
                     self.db.insert_hashes(sid, hashes)
                     self.db.set_song_fingerprinted(sid)
         # Wait until all songs are processed to reload hashes
         self.__load_fingerprinted_audio_hashes()
 
-    def fingerprint_file(self, file_path: str, song_name: str = None) -> None:
+    def fingerprint_file(self, file_path: str, song_name: str = None, anime_name: str = None) -> None:
         """
         Given a path to a file the method generates hashes for it and stores them in the database
         for later be queried.
@@ -115,16 +118,18 @@ class Dejavu:
         song_name_from_path = decoder.get_audio_name_from_path(file_path)
         song_hash = decoder.unique_hash(file_path)
         song_name = song_name or song_name_from_path
+        anime_name = anime_name
         # don't refingerprint already fingerprinted files
         if song_hash in self.songhashes_set:
             print(f"{song_name} already fingerprinted, continuing...")
         else:
-            song_name, hashes, file_hash = Dejavu._fingerprint_worker(
+            song_name, anime_name, hashes, file_hash = Dejavu._fingerprint_worker(
                 file_path,
                 self.limit,
+                anime_name=anime_name,
                 song_name=song_name
             )
-            sid = self.db.insert_song(song_name, file_hash)
+            sid = self.db.insert_song(song_name, anime_name, file_hash)
 
             self.db.insert_hashes(sid, hashes)
             self.db.set_song_fingerprinted(sid)
@@ -184,6 +189,7 @@ class Dejavu:
             song = self.db.get_song_by_id(song_id)
 
             song_name = song.get(SONG_NAME, None)
+            anime_name = song.get(ANIME_NAME, None)
             song_hashes = song.get(FIELD_TOTAL_HASHES, None)
             nseconds = round(float(offset) / DEFAULT_FS * DEFAULT_WINDOW_SIZE * DEFAULT_OVERLAP_RATIO, 5)
             hashes_matched = dedup_hashes[song_id]
@@ -191,6 +197,7 @@ class Dejavu:
             song = {
                 SONG_ID: song_id,
                 SONG_NAME: song_name.encode("utf8"),
+                ANIME_NAME: anime_name.encode("utf8"),
                 INPUT_HASHES: queried_hashes,
                 FINGERPRINTED_HASHES: song_hashes,
                 HASHES_MATCHED: hashes_matched,
@@ -212,14 +219,14 @@ class Dejavu:
         return r.recognize(*options, **kwoptions)
 
     @staticmethod
-    def _fingerprint_worker(file_name, limit):
+    def _fingerprint_worker(file_name, limit, anime_name):
         song_name = os.path.splitext(os.path.basename(file_name))[0]
         # Suppressing print_output because MP will step all over itself
         # while printing to stdout
         fingerprints, file_hash = Dejavu.get_file_fingerprints(
             file_name, limit, print_output=False
         )
-        return song_name, fingerprints, file_hash
+        return song_name, anime_name, fingerprints, file_hash
 
     @staticmethod
     def get_file_fingerprints(file_name: str, limit: int, print_output: bool = False):

@@ -7,7 +7,7 @@ from dejavu.base_classes.common_database import CommonDatabase
 from dejavu.config.settings import (FIELD_FILE_SHA1, FIELD_FINGERPRINTED,
                                     FIELD_HASH, FIELD_OFFSET, FIELD_SONG_ID,
                                     FIELD_SONGNAME, FIELD_TOTAL_HASHES,
-                                    FINGERPRINTS_TABLENAME, SONGS_TABLENAME)
+                                    FINGERPRINTS_TABLENAME, SONGS_TABLENAME, FIELD_ANIMENAME)
 
 
 class PostgreSQLDatabase(CommonDatabase):
@@ -18,6 +18,7 @@ class PostgreSQLDatabase(CommonDatabase):
         CREATE TABLE IF NOT EXISTS "{SONGS_TABLENAME}" (
             "{FIELD_SONG_ID}" SERIAL
         ,   "{FIELD_SONGNAME}" VARCHAR(250) NOT NULL
+        ,   "{FIELD_ANIMENAME}" VARCHAR(250) NOT NULL
         ,   "{FIELD_FINGERPRINTED}" SMALLINT DEFAULT 0
         ,   "{FIELD_FILE_SHA1}" BYTEA
         ,   "{FIELD_TOTAL_HASHES}" INT NOT NULL DEFAULT 0
@@ -59,7 +60,7 @@ class PostgreSQLDatabase(CommonDatabase):
     """
 
     INSERT_SONG = f"""
-        INSERT INTO "{SONGS_TABLENAME}" ("{FIELD_SONGNAME}", "{FIELD_FILE_SHA1}","{FIELD_TOTAL_HASHES}")
+        INSERT INTO "{SONGS_TABLENAME}" ("{FIELD_SONGNAME}", "{FIELD_ANIMENAME}", "{FIELD_FILE_SHA1}","{FIELD_TOTAL_HASHES}")
         VALUES (%s, decode(%s, 'hex'), %s)
         RETURNING "{FIELD_SONG_ID}";
     """
@@ -141,7 +142,7 @@ class PostgreSQLDatabase(CommonDatabase):
         # the previous process.
         Cursor.clear_cache()
 
-    def insert_song(self, song_name: str, file_hash: str, total_hashes: int) -> int:
+    def insert_song(self, song_name: str, anime_name: str, file_hash: str, total_hashes: int) -> int:
         """
         Inserts a song name into the database, returns the new
         identifier of the song.
@@ -152,7 +153,7 @@ class PostgreSQLDatabase(CommonDatabase):
         :return: the inserted id.
         """
         with self.cursor() as cur:
-            cur.execute(self.INSERT_SONG, (song_name, file_hash, total_hashes))
+            cur.execute(self.INSERT_SONG, (song_name, anime_name, file_hash, total_hashes))
             return cur.fetchone()[0]
 
     def __getstate__(self):
